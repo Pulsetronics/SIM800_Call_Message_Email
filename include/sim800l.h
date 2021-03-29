@@ -6,9 +6,10 @@
   
 
 typedef struct SIM800_t {
-       int     pointer;
-       int     numbersOfReceivedByte;
-       uint8_t buffer[200];
+       int      pointer;
+       int      numbersOfReceivedByte;
+       uint8_t  buffer[200];
+       uint8_t  phoneNumbers[3][15];
 }SIM800_t;
 
 void    SIM800_begin(int baudrate);

@@ -211,11 +211,42 @@ bool SIM800_delAllSms(){
 }
 
 
+    /*********************************************************************************************
+     *  If someone is at the door detecting using PIR sensors, the device calls, sends sms and   *
+     *  email to the predefined numbers (owner numbers), the owner can then call or send SMS to  *
+     *  open the door.                                                                           *                 
+     *********************************************************************************************/
+
+void CheckTheDoor(void) {
+
+     if(digitalRead(PIR_SENSE_PIN) == HIGH) {  
+          
+          // Send SMS to the Numbers
+
+          
+    }
+}
+`
 void setup() {
   // put your setup code here, to run once:
+  pinMode(RESET_PIN, 1);      // Output
+  pinMode(PIR_SENSE_PIN, 0);  //Input
+  pinMode(GAS_SENSE_PIN, 0);  //Input
+
+  // configure GSM
+  SIM.print("AT+CMGF=1\r\n");
+  //Sample Phone Numbers
+  strcpy((char*) sim800.phoneNumbers[0], "+918447819324");
+  strcpy((char*) sim800.phoneNumbers[1], "+919319643241");
+  strcpy((char*) sim800.phoneNumbers[2], "+919873113817");
+
   SIM800_begin(9600); 
+
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
+        CheckTheDoor();
+
+
+
+  }
