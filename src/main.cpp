@@ -19,8 +19,7 @@ void SIM800_begin (int baudrate) {
 void SIM800_readSerial ( int noOfByte ) {
      int16_t timeout = 0;
      sim800.pointer  = 0;
-     memset(sim800.buffer, 0, 199);
-     
+     memset(sim800.buffer, 0, bufferSize - 1);
      while(sim800.pointer < noOfByte) {
        if (Serial.available() > 0) {
           sim800.buffer[sim800.pointer++] = Serial.read();
@@ -38,14 +37,22 @@ void SIM800_reset(void) {
   delay(1000);
 
   // wait for the module response
-  memset(sim800.buffer, 0, 199);
+  memset(sim800.buffer, 0, bufferSize-1);
   while (strcmp((char*) sim800.buffer,"OK") != 0 ){
     SIM.print(F("AT\r\n"));
     SIM800_readSerial(2);
   }
   
   //wait for sms ready
+  memset(sim800.buffer, 0, bufferSize-1);
   while (strcmp((char*) sim800.buffer, "SMS") != 0) {
+      SIM800_readSerial(3);
+  }
+  
+   // Set Text Mode
+   memset(sim800.buffer, 0, bufferSize-1);
+   while (strcmp((char*) sim800.buffer, "OK") != 0) {
+      SIM.print("AT+CMGF=1\r\n");
       SIM800_readSerial(2);
   }
  
@@ -99,10 +106,10 @@ void SIM800_deactivateBearerProfile(){
 
 bool SIM800_answerCall(){
    SIM.print (F("ATA\r\n"));
-   // _buffer=_readSerial();
-   //Response in case of data call, if successfully connected 
-  //  if ( (_buffer.indexOf("OK") )!=-1 ) return true;  
-  //  else return false;
+   //  _buffer=_readSerial();
+   //  Response in case of data call, if successfully connected 
+   //  if ( (_buffer.indexOf("OK") )!=-1 ) return true;  
+   //  else return false;
   return false;
 }
 
@@ -145,28 +152,28 @@ bool SIM800_hangoffCall(){
 
 
 
-bool SSIM800_sendSms(char* number,char* text){
+bool SIM800_sendSms(char* number,char* text){
 
-    SIM.print (F("AT+CMGF=1\r")); //set sms to text mode  
-    // _buffer=_readSerial();
+    memset(sim800.buffer, 0, bufferSize-1);
+    while (strcmp((char*) sim800.buffer, "OK") != 0) {
+      SIM.print("AT+CMGF=1\r\n");
+      SIM800_readSerial(2);
+    }
+    memset(sim800.buffer, 0, bufferSize-1);
+    while(strcmp((char*) sim800.buffer, "<") != 0) {
     SIM.print (F("AT+CMGS=\""));  // command to send sms
     SIM.print (number);           
-    SIM.print(F("\"\r"));       
-    // _buffer=_readSerial(); 
+    SIM.print(F("\"\r"));     
+    SIM800_readSerial(1);  
+    }
+
     SIM.print (text);
     SIM.print ("\r"); 
-	//change delay 100 to readserial	
-    // _buffer=_readSerial();
     SIM.print((char)26);
-    // _buffer=_readSerial();
-    //expect CMGS:xxx   , where xxx is a number,for the sending sms.
-    // if (((_buffer.indexOf("CMGS") ) != -1 ) ){
-    //   return true;
-    // }
-    // else {
-    //   return false;
-    // }
-    return false;
+    SIM800_readSerial(5);
+
+     if(strcmp((char*) sim800.buffer, "+CMGS") == 0) return  true;
+     else return false;
 }
 
 
@@ -221,20 +228,24 @@ void CheckTheDoor(void) {
 
      if(digitalRead(PIR_SENSE_PIN) == HIGH) {  
           
-          // Send SMS to the Numbers
-
+       /* Send SMS to the Numbers */
+       const char textMsg[] = "Person Detected";
+       SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) textMsg); 
+      
           
     }
 }
-`
+
 void setup() {
   // put your setup code here, to run once:
   pinMode(RESET_PIN, 1);      // Output
   pinMode(PIR_SENSE_PIN, 0);  //Input
   pinMode(GAS_SENSE_PIN, 0);  //Input
-
+  
+ 
   // configure GSM
-  SIM.print("AT+CMGF=1\r\n");
+  SIM800_reset();
+
   //Sample Phone Numbers
   strcpy((char*) sim800.phoneNumbers[0], "+918447819324");
   strcpy((char*) sim800.phoneNumbers[1], "+919319643241");

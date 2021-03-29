@@ -4,12 +4,15 @@
 
 #include "Arduino.h"
   
+#define bufferSize   200
 
 typedef struct SIM800_t {
        int      pointer;
        int      numbersOfReceivedByte;
-       uint8_t  buffer[200];
+       uint8_t  buffer[bufferSize];
        uint8_t  phoneNumbers[3][15];
+       uint8_t  textMessage[bufferSize];
+       
 }SIM800_t;
 
 void    SIM800_begin(int baudrate);
