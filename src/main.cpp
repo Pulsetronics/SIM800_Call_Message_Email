@@ -114,10 +114,15 @@ bool SIM800_answerCall(){
 }
 
 
-void  SIM800_callNumber(char* number){
+bool SIM800_callNumber(char* number){
+  memset(sim800.buffer, 0, bufferSize-1);
   SIM.print (F("ATD"));
   SIM.print (number);
   SIM.print(F(";\r\n"));
+  SIM800_readSerial(2);
+
+  if(strcmp((char*) sim800.buffer, "OK") == 0) return true;
+  else return false;
 }
 
 
@@ -230,8 +235,13 @@ void CheckTheDoor(void) {
           
        /* Send SMS to the Numbers */
        const char textMsg[] = "Person Detected";
-       SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) textMsg); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) textMsg) != true); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[1], (char*) textMsg) != true); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[2], (char*) textMsg) != true); 
       
+       /* Call all Numbers */
+       
+       while (SIM800_callNumber((char*) sim800.phoneNumbers[0]) != true);
           
     }
 }

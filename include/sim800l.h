@@ -12,7 +12,7 @@ typedef struct SIM800_t {
        uint8_t  buffer[bufferSize];
        uint8_t  phoneNumbers[3][15];
        uint8_t  textMessage[bufferSize];
-       
+
 }SIM800_t;
 
 void    SIM800_begin(int baudrate);
@@ -20,7 +20,7 @@ void    SIM800_readSerial ( int noOfByte );
 void    SIM800_reset(void); 
 
 bool    SIM800_answerCall(void); 	
-void    SIM800_callNumber(char* number);
+bool    SIM800_callNumber(char* number);
 bool    SIM800_hangoffCall(void);
 uint8_t SIM800_getCallStatus(void);   
 
