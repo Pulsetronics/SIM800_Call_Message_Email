@@ -222,6 +222,43 @@ bool SIM800_delAllSms(){
   return false;
 }
 
+bool SIM800_emailConfig(void) {
+     char result = 0;
+
+     /* Set the connection type to GPRS */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+     /* Set the APN to to “www” since i am using a Vodafone SIM card 
+        It might be different for you, and depends on the network */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SAPBR=3,1,\"APN\",\"www\"\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+     /* Enable the GPRS */
+     
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SAPBR=1,1\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+     /* Query if the connection is setup properly, if we get back a 
+        IP address then we can proceed */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SAPBR=2,1\r\n"));
+     SIM800_readSerial(6);
+     if (strcmp((char*) sim800.buffer, "+SAPBR") == 0) result++;
+
+    if(result == 4) return true;
+    else return false;
+}
+
 
     /*********************************************************************************************
      *  If someone is at the door detecting using PIR sensors, the device calls, sends sms and   *
@@ -235,13 +272,20 @@ void CheckTheDoor(void) {
           
        /* Send SMS to the Numbers */
        const char textMsg[] = "Person Detected";
-       while (SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) textMsg) != true); 
-       while (SIM800_sendSms((char*) sim800.phoneNumbers[1], (char*) textMsg) != true); 
-       while (SIM800_sendSms((char*) sim800.phoneNumbers[2], (char*) textMsg) != true); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) textMsg) == false); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[1], (char*) textMsg) == false); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[2], (char*) textMsg) == false); 
       
        /* Call all Numbers */
+       while (SIM800_callNumber((char*) sim800.phoneNumbers[0]) == false);
+       delay(5000);
+       while (SIM800_callNumber((char*) sim800.phoneNumbers[1]) == false);
+       delay(5000);
+       while (SIM800_callNumber((char*) sim800.phoneNumbers[2]) == false);
+       delay(5000);
+
+       /* Send Emails */
        
-       while (SIM800_callNumber((char*) sim800.phoneNumbers[0]) != true);
           
     }
 }
@@ -255,6 +299,7 @@ void setup() {
  
   // configure GSM
   SIM800_reset();
+  while(SIM800_emailConfig() == false);
 
   //Sample Phone Numbers
   strcpy((char*) sim800.phoneNumbers[0], "+918447819324");

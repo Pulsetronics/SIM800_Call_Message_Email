@@ -33,6 +33,7 @@ void SIM800_signalQuality(void);
 void SIM800_setPhoneFunctionality(void);
 void SIM800_activateBearerProfile(void);
 void SIM800_deactivateBearerProfile(void);
+bool SIM800_emailConfig(void);
 
 
 #endif 
