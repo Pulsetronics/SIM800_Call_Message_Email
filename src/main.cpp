@@ -7,6 +7,7 @@
 #define RESET_PIN     13
 #define GAS_SENSE_PIN 12
 #define PIR_SENSE_PIN 11
+#define BUZZER_PIN    10
 
 
 
@@ -165,7 +166,7 @@ bool SIM800_sendSms(char* number,char* text){
       SIM800_readSerial(2);
     }
     memset(sim800.buffer, 0, bufferSize-1);
-    while(strcmp((char*) sim800.buffer, "<") != 0) {
+    while(strcmp((char*) sim800.buffer, ">") != 0) {
     SIM.print (F("AT+CMGS=\""));  // command to send sms
     SIM.print (number);           
     SIM.print(F("\"\r"));     
@@ -173,7 +174,7 @@ bool SIM800_sendSms(char* number,char* text){
     }
 
     SIM.print (text);
-    SIM.print ("\r"); 
+    SIM.print ("\r\n"); 
     SIM.print((char)26);
     SIM800_readSerial(5);
 
@@ -222,7 +223,7 @@ bool SIM800_delAllSms(){
   return false;
 }
 
-bool SIM800_emailConfig(void) {
+bool SIM800_GPRSConfig(void) {
      char result = 0;
 
      /* Set the connection type to GPRS */
@@ -259,6 +260,141 @@ bool SIM800_emailConfig(void) {
     else return false;
 }
 
+bool SIM800_sendEmail
+(    char* subject,
+     char* text, 
+     char* stmp_address, 
+     char* smtp_port, 
+     char* s_emailAddress, 
+     char* r_emailAddress, 
+     char* s_password, 
+     char* senderName, 
+     char* receiverName
+) 
+{
+     char result = 0;
+
+    /* Start by setting up the Email bearer profile identifier */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+EMAILCID=1\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+
+     /* Set the timeout value within which you will enter the email data to be sent, 
+        Here i have set it to 30 seconds */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+EMAILTO=30\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+
+     /* Set the SMTP server address and port number */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SMTPSRV="));
+     SIM.print(stmp_address);
+     SIM.print(",");
+     SIM.print(smtp_port);
+     SIM.print(F("\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+ 
+     /* Set the email authentication information */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SMTPAUTH=1,\""));
+     SIM.print(s_emailAddress);
+     SIM.print("\",\"");
+     SIM.print(s_password);
+     SIM.print(F("\"\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+ 
+
+    /* Set the senders email address and Name */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SMTPFROM=\""));
+     SIM.print(s_emailAddress);
+     SIM.print("\",\"");
+     SIM.print(senderName);
+     SIM.print(F("\"\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+    
+    /* Set the To email address and Name */
+    
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SMTPRCPT=0,0,\""));
+     SIM.print(r_emailAddress);
+     SIM.print("\",\"");
+     SIM.print(receiverName);
+     SIM.print(F("\"\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+
+   /* Set the Cc email address and Name */
+
+     // AT+SMTPRCPT=1,0,”olayiwola.ayinde@eulermotors.com”,”nerdHardware”
+
+
+   /* Set the Bcc email address and Name */
+
+     // AT+SMTPRCPT=2,0,”microprogrammer@ymail.com”,”Olayiwola”
+
+
+
+   /* Set the email Subject, You can set whatever you want. I have set it as MySubject */
+
+     memset(sim800.buffer, 0, bufferSize-1);
+     SIM.print(F("AT+SMTPSUB=\""));
+     SIM.print(subject);
+     SIM.print(F("\"\r\n"));
+     SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+ 
+   /* Time to enter the email content. Enter the below command and you will get a > prompt 
+      after which you should type content and press Ctrl+Z when you are done or send 0x1A 
+      hex character.
+   */
+    memset(sim800.buffer, 0, bufferSize-1);
+    SIM.print(F("AT+SMTPBODY\r\n"));
+    SIM800_readSerial(1);
+    while(strcmp((char*) sim800.buffer, ">") != 0) {
+      memset(sim800.buffer, 0, bufferSize-1);
+      SIM.print(F("AT+SMTPBODY\r\n"));
+      SIM800_readSerial(1);
+    }
+    memset(sim800.buffer, 0, bufferSize-1);
+    SIM.print(text);
+    SIM.print((char)26);
+    SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+
+
+    /* Send the email by entering the below command, if you get  the URC 
+       +SMTPSEND: 1 then email is successfully sent
+    */
+
+    memset(sim800.buffer, 0, bufferSize-1);
+    SIM.print("AT+SMTPSEND\r\n");
+    SIM.print((char)26);
+    SIM800_readSerial(2);
+     if (strcmp((char*) sim800.buffer, "OK") == 0) result++;
+    SIM800_readSerial(12);
+     if (strcmp((char*) sim800.buffer, "+SMTPSEND: 1") == 0) result++;
+
+    if(result == 10) return true;
+    else return false;
+}
+
 
     /*********************************************************************************************
      *  If someone is at the door detecting using PIR sensors, the device calls, sends sms and   *
@@ -271,10 +407,10 @@ void CheckTheDoor(void) {
      if(digitalRead(PIR_SENSE_PIN) == HIGH) {  
           
        /* Send SMS to the Numbers */
-       const char textMsg[] = "Person Detected";
-       while (SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) textMsg) == false); 
-       while (SIM800_sendSms((char*) sim800.phoneNumbers[1], (char*) textMsg) == false); 
-       while (SIM800_sendSms((char*) sim800.phoneNumbers[2], (char*) textMsg) == false); 
+       strcpy((char*) sim800.Message, "Person Detected");
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) sim800.Message) == false); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[1], (char*) sim800.Message) == false); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[2], (char*) sim800.Message) == false); 
       
        /* Call all Numbers */
        while (SIM800_callNumber((char*) sim800.phoneNumbers[0]) == false);
@@ -285,8 +421,26 @@ void CheckTheDoor(void) {
        delay(5000);
 
        /* Send Emails */
+       strcpy((char*) sim800.subject,              "MyProject");
+       strcpy((char*) sim800.Message,              "Person or Intruder Detected !!!");
+       strcpy((char*) sim800.smtpServerAddress,    "smtp.gmail.com");
+       strcpy((char*) sim800.smtpServerPort,       "465");
+       strcpy((char*) sim800.senderEmailAddress,   "ayindeolayiwola361@gmail.com");
+       strcpy((char*) sim800.receiverEmailAddress, "olayiwola_ayinde@yahoo.com");
+       strcpy((char*) sim800.senderEmailPassword,  "xxxxxx");
+       strcpy((char*) sim800.senderName,           "project Device");
+       strcpy((char*) sim800.receiverName,         "myEmail");
        
-          
+       while(SIM800_sendEmail((char*) sim800.subject,
+                        (char*) sim800.Message,
+                        (char*) sim800.smtpServerAddress,
+                        (char*) sim800.smtpServerPort,
+                        (char*) sim800.senderEmailAddress,
+                        (char*) sim800.receiverEmailAddress,
+                        (char*) sim800.senderEmailPassword,
+                        (char*) sim800.senderName,
+                        (char*) sim800.receiverName
+                       ) == false);
     }
 }
 
@@ -295,11 +449,11 @@ void setup() {
   pinMode(RESET_PIN, 1);      // Output
   pinMode(PIR_SENSE_PIN, 0);  //Input
   pinMode(GAS_SENSE_PIN, 0);  //Input
-  
+  pinMode(BUZZER_PIN, 1);     //Input
  
   // configure GSM
   SIM800_reset();
-  while(SIM800_emailConfig() == false);
+  while(SIM800_GPRSConfig() == false);
 
   //Sample Phone Numbers
   strcpy((char*) sim800.phoneNumbers[0], "+918447819324");
