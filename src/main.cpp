@@ -432,15 +432,62 @@ void CheckTheDoor(void) {
        strcpy((char*) sim800.receiverName,         "myEmail");
        
        while(SIM800_sendEmail((char*) sim800.subject,
-                        (char*) sim800.Message,
-                        (char*) sim800.smtpServerAddress,
-                        (char*) sim800.smtpServerPort,
-                        (char*) sim800.senderEmailAddress,
-                        (char*) sim800.receiverEmailAddress,
-                        (char*) sim800.senderEmailPassword,
-                        (char*) sim800.senderName,
-                        (char*) sim800.receiverName
-                       ) == false);
+                              (char*) sim800.Message,
+                              (char*) sim800.smtpServerAddress,
+                              (char*) sim800.smtpServerPort,
+                              (char*) sim800.senderEmailAddress,
+                              (char*) sim800.receiverEmailAddress,
+                              (char*) sim800.senderEmailPassword,
+                              (char*) sim800.senderName,
+                              (char*) sim800.receiverName
+                             ) == false);
+    }
+}
+
+
+void CheckGasLeakage(void) {
+
+     if(digitalRead(GAS_SENSE_PIN) == HIGH) {  
+          
+       /* Activate Buzzer */
+       digitalWrite(BUZZER_PIN, HIGH);
+
+       /* Send SMS to the Numbers */
+       strcpy((char*) sim800.Message, "Gas Leakage Detected");
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[0], (char*) sim800.Message) == false); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[1], (char*) sim800.Message) == false); 
+       while (SIM800_sendSms((char*) sim800.phoneNumbers[2], (char*) sim800.Message) == false); 
+      
+       /* Call all Numbers */
+       while (SIM800_callNumber((char*) sim800.phoneNumbers[0]) == false);
+       delay(5000);
+       while (SIM800_callNumber((char*) sim800.phoneNumbers[1]) == false);
+       delay(5000);
+       while (SIM800_callNumber((char*) sim800.phoneNumbers[2]) == false);
+       delay(5000);
+
+       /* Send Emails */
+       strcpy((char*) sim800.subject,              "MyProject");
+       strcpy((char*) sim800.Message,              "Gas Leakage Detected !!!");
+       strcpy((char*) sim800.smtpServerAddress,    "smtp.gmail.com");
+       strcpy((char*) sim800.smtpServerPort,       "465");
+       strcpy((char*) sim800.senderEmailAddress,   "ayindeolayiwola361@gmail.com");
+       strcpy((char*) sim800.receiverEmailAddress, "olayiwola_ayinde@yahoo.com");
+       strcpy((char*) sim800.senderEmailPassword,  "xxxxxx");
+       strcpy((char*) sim800.senderName,           "project Device");
+       strcpy((char*) sim800.receiverName,         "myEmail");
+       
+       while(SIM800_sendEmail((char*) sim800.subject,
+                              (char*) sim800.Message,
+                              (char*) sim800.smtpServerAddress,
+                              (char*) sim800.smtpServerPort,
+                              (char*) sim800.senderEmailAddress,
+                              (char*) sim800.receiverEmailAddress,
+                              (char*) sim800.senderEmailPassword,
+                              (char*) sim800.senderName,
+                              (char*) sim800.receiverName
+                            ) == false);
+      digitalWrite(BUZZER_PIN, LOW);
     }
 }
 
@@ -466,7 +513,5 @@ void setup() {
 
 void loop() {
         CheckTheDoor();
-
-
-
+        CheckGasLeakage(); 
   }

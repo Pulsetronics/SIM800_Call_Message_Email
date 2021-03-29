@@ -44,6 +44,5 @@ void SIM800_activateBearerProfile(void);
 void SIM800_deactivateBearerProfile(void);
 bool SIM800_GPRSConfig(void);
 bool SIM800_sendEmail( char* subject, char* text, char* stmp_address, char* smtp_port, char* s_emailAddress, char* r_emailAddress, char* s_password, char* senderName, char* receiverName); 
-
-
+void CheckGasLeakage(void);
 #endif 
