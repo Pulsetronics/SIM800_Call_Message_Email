@@ -1,20 +1,22 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
+#include <SoftwareSerial.h>>
 #include "sim800l.h"
 
-#define SIM           Serial
 #define RESET_PIN     13
 #define GAS_SENSE_PIN 12
 #define PIR_SENSE_PIN 11
 #define BUZZER_PIN    10
 
 
-
+SoftwareSerial SIM(2,3);
 SIM800_t sim800;
 
 void SIM800_begin (int baudrate) {
      SIM.begin(baudrate);
+     Serial.begin(baudrate);
+     Serial.println("Program Started");
 }
 
 void SIM800_readSerial ( int noOfByte ) {
@@ -22,8 +24,8 @@ void SIM800_readSerial ( int noOfByte ) {
      sim800.pointer  = 0;
      memset(sim800.buffer, 0, bufferSize - 1);
      while(sim800.pointer < noOfByte) {
-       if (Serial.available() > 0) {
-          sim800.buffer[sim800.pointer++] = Serial.read();
+       if (SIM.available() > 0) {
+          sim800.buffer[sim800.pointer++] = SIM.read();
        }
        if(timeout++ > 1000) break;
        delay(1);
@@ -37,25 +39,45 @@ void SIM800_reset(void) {
   digitalWrite(RESET_PIN,0);
   delay(1000);
 
+  // Disbale Echo
+  while (strcmp((char*) sim800.buffer, "OK") != 0) {
+      memset(sim800.buffer, 0, bufferSize-1);
+      SIM.print("ATE0\r\n");
+      SIM800_readSerial(2);
+  }
+  Serial.print("ATE0    -> ");
+  Serial.println((const char*)sim800.buffer);
+
   // wait for the module response
-  memset(sim800.buffer, 0, bufferSize-1);
   while (strcmp((char*) sim800.buffer,"OK") != 0 ){
+    memset(sim800.buffer, 0, bufferSize-1);
     SIM.print(F("AT\r\n"));
     SIM800_readSerial(2);
   }
-  
-  //wait for sms ready
-  memset(sim800.buffer, 0, bufferSize-1);
-  while (strcmp((char*) sim800.buffer, "SMS") != 0) {
-      SIM800_readSerial(3);
-  }
+  Serial.print("AT      -> ");
+  Serial.println((const char*)sim800.buffer);
   
    // Set Text Mode
-   memset(sim800.buffer, 0, bufferSize-1);
    while (strcmp((char*) sim800.buffer, "OK") != 0) {
+      memset(sim800.buffer, 0, bufferSize-1);
       SIM.print("AT+CMGF=1\r\n");
       SIM800_readSerial(2);
   }
+
+   // Call a number for Demo
+   while (strcmp((char*) sim800.buffer, "OK") != 0) {
+      memset(sim800.buffer, 0, bufferSize-1);
+      SIM.print("ATD+2348029266470;\r\n");
+      SIM800_readSerial(2);
+  }
+
+  Serial.print("Call No -> ");
+  Serial.println((const char*)sim800.buffer);
+   
+   while(1) {
+       SIM800_readSerial(4);
+       Serial.println((const char*)sim800.buffer);
+   }
  
 }
 
@@ -126,8 +148,6 @@ bool SIM800_callNumber(char* number){
   else return false;
 }
 
-
-
 uint8_t SIM800_getCallStatus(){
 /*
   values of return:
@@ -152,10 +172,6 @@ bool SIM800_hangoffCall(){
   // else return false;
   return false;
 }
-
-
-
-
 
 
 bool SIM800_sendSms(char* number,char* text){
@@ -497,17 +513,19 @@ void setup() {
   pinMode(PIR_SENSE_PIN, 0);  //Input
   pinMode(GAS_SENSE_PIN, 0);  //Input
   pinMode(BUZZER_PIN, 1);     //Input
- 
+  
+  SIM800_begin(9600); 
+  delay(5000);
+
   // configure GSM
   SIM800_reset();
-  while(SIM800_GPRSConfig() == false);
+  while(SIM800_GPRSConfig() == false) SIM.print("Configuring...");
 
   //Sample Phone Numbers
   strcpy((char*) sim800.phoneNumbers[0], "+918447819324");
   strcpy((char*) sim800.phoneNumbers[1], "+919319643241");
   strcpy((char*) sim800.phoneNumbers[2], "+919873113817");
 
-  SIM800_begin(9600); 
 
 }
 
