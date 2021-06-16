@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
-#include <SoftwareSerial.h>>
+#include <SoftwareSerial.h>
 #include "sim800l.h"
 
 #define RESET_PIN     13
@@ -27,7 +27,7 @@ void SIM800_readSerial ( int noOfByte ) {
        if (SIM.available() > 0) {
           sim800.buffer[sim800.pointer++] = SIM.read();
        }
-       if(timeout++ > 1000) break;
+       if(timeout++ > 3000) break;
        delay(1);
      }
 }
@@ -63,17 +63,27 @@ void SIM800_reset(void) {
       SIM.print("AT+CMGF=1\r\n");
       SIM800_readSerial(2);
   }
-
-   // Call a number for Demo
-   while (strcmp((char*) sim800.buffer, "OK") != 0) {
-      memset(sim800.buffer, 0, bufferSize-1);
-      SIM.print("ATD+2348029266470;\r\n");
-      SIM800_readSerial(2);
-  }
-
-  Serial.print("Call No -> ");
+  Serial.print("AT+CMGF=1 -> ");
   Serial.println((const char*)sim800.buffer);
-   
+  
+typedef struct response_t {
+             uint32_t counter; 
+       
+             uint8_t  number[20];
+}response_t;
+
+   response_t caller;
+   for(caller.counter =  0; caller.counter < 5; caller.counter++) {
+     SIM.println("AT+CMGS=\"+2348129502031\"");
+     Serial.println("AT+CMGS=\"+2348129502031\"");
+     delay(2000);
+     SIM.print("Hello - World");
+     Serial.print("Hello - World\r\n");
+     delay(1000);
+     SIM.write(26); // ASCII code of CTRL+Z
+     delay(5000);
+  }
+    Serial.println((const char*)sim800.buffer);
    while(1) {
        SIM800_readSerial(4);
        Serial.println((const char*)sim800.buffer);
